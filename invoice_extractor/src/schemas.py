@@ -63,39 +63,6 @@ def validate_statement(statement: str):
         return None
 
 
-statement_extraction = '''
-{
-        "bankName": "UBA BANK",
-        "accountNumber": "2068698975",
-        "openingBalance": 16823.5,
-        "currency": "NGN",
-        "totalDebit": 0.0,
-        "totalCredit": 0.0,
-        "transactions": [
-            {
-                "transactionDate": "2024-10-01T00:00:00",
-                "details": "Opening",
-                "balance": 16823.5,
-                "amount": 0.0
-            },
-            {
-                "transactionDate": "2024-10-01T00:00:00",
-                "details": "POS Pur @ 2UP1A787-T IYATAWA GLOBAL VE 005309 205 014882419608 / 000000996668",
-                "amount": 6500.0,
-                "balance": 10323.5
-            },
-            {
-                "transactionDate": "2024-10-01T00:00:00",
-                "details": "POS Pur @ 2UP1A787-T Usmaniyya provisi 024130 207 014883870386 / 000000303067",
-                "amount": 7100.0,
-                "balance": 3223.5
-            },
-            {
-                "transactionDate": "2024-10-03T00:00:00",
-                "details": "POS Pur @ 2CRF851X-C-C- 014899466032 / 000000015237",
-                "amount": 1000.0,
-                "balance": 2223.5
-            }]}'''
 
 valid_data = validate_statement(statement_extraction).model_dump_json()
 print(valid_data)
