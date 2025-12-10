@@ -70,10 +70,16 @@ def process_cv(pdf_path: str | Path) -> CVExtraction:
 def main():
     """Main entry point for CV extraction."""
     pdf_file = Path(__file__).parent.parent / "data" / "Alokam_Augusta_DA.pdf"
+    output_file = Path(__file__).parent.parent / "output.json"
 
     cv_data = process_cv(pdf_file)
     
-    print(cv_data.model_dump_json(indent=2))
+    # Save to JSON file
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(cv_data.model_dump_json(indent=2))
+    
+    print(f"Results saved to {output_file}")
+   
     
     return cv_data
 
