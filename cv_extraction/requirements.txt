@@ -1,0 +1,8 @@
+openai
+pydantic
+tika
+python-dotenv
+nest-asyncio
+pydantic-ai
+instructor
+psycopg2-binary

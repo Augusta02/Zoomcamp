@@ -4,8 +4,20 @@ from dotenv import load_dotenv
 from schemas import CVExtraction
 from ingestor import extract_text_from_pdf
 import json
+import os
+import psycopg2
+from psycopg2.extras import Json
 
 load_dotenv()
+
+# Database configuration
+DB_CONFIG = {
+    "host": os.getenv("DB_HOST", "localhost"),
+    "port": os.getenv("DB_PORT", "5432"),
+    "database": os.getenv("DB_NAME", "postgres"),
+    "user": os.getenv("DB_USER", "postgres"),
+    "password": os.getenv("DB_PASSWORD", ""),
+}
 
 # Get the JSON schema from CVExtraction model
 cv_schema = json.dumps(CVExtraction.model_json_schema(), indent=2)
@@ -67,6 +79,58 @@ def process_cv(pdf_path: str | Path) -> CVExtraction:
     return cv_data
 
 
+def save_to_postgres(cv_data: CVExtraction) -> int:
+    """Save CV extraction data to PostgreSQL.
+    
+    Returns:
+        int: The ID of the inserted record
+    """
+    conn = psycopg2.connect(**DB_CONFIG)
+    cursor = conn.cursor()
+    
+    try:
+        insert_query = """
+            INSERT INTO cv_extractions (
+                full_name, email, phone_number, location,
+                technical_skills, soft_skills,
+                work_experience, volunteering, links, summary
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            ) RETURNING id;
+        """
+        
+        # Convert nested objects to JSON-serializable format
+        work_exp_json = [job.model_dump() for job in cv_data.work_experience]
+        volunteering_json = [vol.model_dump() for vol in cv_data.volunteering]
+        links_json = [{"platform": link.platform, "url": str(link.url)} for link in cv_data.links]
+        
+        cursor.execute(insert_query, (
+            cv_data.full_name,
+            cv_data.email,
+            cv_data.phone_number,
+            cv_data.location,
+            cv_data.technical_skills,          
+            cv_data.soft_skills,               
+            Json(work_exp_json),               
+            Json(volunteering_json),           
+            Json(links_json),                 
+            cv_data.summary
+        ))
+        
+        record_id = cursor.fetchone()[0]
+        conn.commit()
+        print(f"CV data saved to PostgreSQL with ID: {record_id}")
+        return record_id
+        
+    except Exception as e:
+        conn.rollback()
+        print(f"Error saving to PostgreSQL: {e}")
+        raise
+    finally:
+        cursor.close()
+        conn.close()
+
+
 def main():
     """Main entry point for CV extraction."""
     pdf_file = Path(__file__).parent.parent / "data" / "Alokam_Augusta_DA.pdf"
@@ -77,9 +141,10 @@ def main():
     # Save to JSON file
     with open(output_file, "w", encoding="utf-8") as f:
         f.write(cv_data.model_dump_json(indent=2))
-    
     print(f"Results saved to {output_file}")
-   
+    
+    # Save to PostgreSQL
+    save_to_postgres(cv_data)
     
     return cv_data
 
